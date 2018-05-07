@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>boom</title>
+	</head>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		
+		canvas {
+			display: block;
+			background: #000003;
+		}
+	</style>
+
+	<body>
+		<canvas id="boom"></canvas>
+	</body>
+	<script>
+		// 创建画布
+		var canvas = document.getElementById('boom'),
+			ctx = canvas.getContext('2d'),
+			h,
+			w;
+
+		(function setSize() {
+			window.onresize = arguments.callee;
+			w = window.innerWidth;
+			h = window.innerHeight;
+			canvas.width = w;
+			canvas.height = h;
+		})();
+
+		function random(min, max) {
+			return Math.random() * (max - min) + min;
+		}
+		// 设定随机颜色
+		function randomColor() {
+			var rgb = (Math.random() * 0x1000000 << 0).toString(16);
+			return '#' + (new Array(7 - rgb.length).join(0)) + rgb;
+		}
+		var firesNum = random(10, 30), // 烟花数量
+			fire = [], // 烟花数组
+			fireWork = []; // 爆炸数组
+
+		// 设置不同的三角函数
+		var chainSpark = [{
+				'_fun': function(val) {
+					return Math.cos(val)
+				}
+			},
+			{
+				'_fun': function(val) {
+					return Math.sin(val)
+				}
+			},
+			{
+				'_fun': function(val) {
+					return Math.tan(val)
+				}
+			}
+		];
+		// 创建烟花对象，爆炸对象
+		var fires = function() {
+			this.init();
+		}
+		var firesWork = function() {
+			this.init();
+		}
+
+		fires.prototype = {
+			init: function() {
+				this.x = random(0.4 * w, 0.58 * w); // x坐标
+				this.y = h; // y坐标
+				this.size = Math.random() + 2.5; // 初始大小
+				this.color = randomColor(); // 初始色调
+				this.vX = random(-0.3, 1); // x速度
+				this.vY = -(random(0, 1) * 2 + 2); // y速度
+				this.top = random(0.2, 0.4) * h; // 烟花距离顶部距离
+				this.alpha = 1; // 透明度
+				this.delay = 0; // 延迟
+				this.aX = Math.random() * 0.06 - 0.03; // X方向是速度变化
+			},
+			update: function() {
+				if(this.y > this.top) {
+					this.alpha = random(0.3, 0.4) + 0.2;
+					this.y += this.vY;
+					this.x += this.vX + this.aX;
+				} else { // 当烟花到达预计的顶部距离 烟花爆炸开始
+					var color = randomColor();
+					var firesWorkNum = random(100, 300); // 设定爆炸散开数目
+					for(var i = 0; i < firesWorkNum; i++) {
+						var _firework = new firesWork();
+						_firework.x = this.x;
+						_firework.y = this.y;
+						_firework.color = color;
+						_firework.angle = (Math.PI * 2) / firesNum * i;
+						_firework.life = _firework.long = 350;
+						fireWork.push(_firework);
+					}
+					this.init();
+				}
+			}
+		}
+
+		firesWork.prototype = {
+			init: function() {
+				this.x = 100;
+				this.y = 100;
+				this.vX = chainSpark[parseInt(random(0, 3))]._fun(random(-1, 1));
+				this.vY = chainSpark[parseInt(random(0, 3))]._fun(random(-1, 1));
+				this.life = 50; // 烟花距离顶部距离
+				this.long = 0;
+				this.alpha = 1;
+				this.color = randomColor();
+				this.size = 5;
+				this.orgSize = 2;
+				this.angle = random(0, 5 * Math.PI);
+				this.aY = random(1, 10); // y方向速度的变化值
+				this.velocity = Math.random() * 3 + 4;
+				this.xIndex = parseInt(random(0, 3));
+				this.yIndex = parseInt(random(0, 3));
+			},
+			update: function() {
+				this.vX *= parseInt(random(-3, 3));
+				this.vY *= parseInt(random(-3, 3));
+				this.x += (Math.sin(this.vY) + this.velocity * this.xIndex) * this.vX;
+				this.y += (Math.cos(this.vY) * this.vY *2) ;
+				this.vY += this.aY;
+				this.alpha = this.life / this.long;
+				this.size = this.alpha * this.orgSize;
+				this.alpha = this.alpha > 0.6 ? 1 : this.alpha;
+				this.life--;
+			}
+		}
+
+		function draw() {
+			ctx.globalCompositeOperation = 'screen';
+			for(var i = 0; i < fire.length; i++) {
+				var _fire = fire[i];
+				if(_fire.delay == 0) {
+					ctx.beginPath();
+					ctx.globalAlpha = _fire.alpha;
+					ctx.arc(_fire.x, _fire.y, _fire.size, 0, Math.PI * 2);
+					ctx.fillStyle = _fire.color;
+					ctx.closePath();
+					ctx.fill();
+				}
+			}
+
+			for(var i = fireWork.length - 1; i >= 0; i--) {
+				var _firework = fireWork[i];
+				if(_firework.life >= 0) {
+					ctx.beginPath();
+					ctx.globalAlpha = _firework.alpha;
+					ctx.arc(_firework.x, _firework.y, _firework.size, 0, Math.PI * 2);
+					ctx.fillStyle = _firework.color;
+					ctx.closePath();
+					ctx.fill();
+				} else {
+					fireWork.splice(i, 1);
+				}
+			}
+		}
+
+		function clearScreen() {
+			ctx.globalCompositeOperation = 'source-over';
+			ctx.globalAlpha = 0.2;
+			ctx.fillStyle = '#000003';
+			ctx.fillRect(0, 0, w, h);
+		}
+
+		/*创建烟花*/
+		for(var i = 0; i < firesNum; i++) {
+			var newFire = new fires();
+			newFire.delay = i * 100;
+			fire.push(newFire);
+		}
+
+		! function runAnimate() {
+			clearScreen();
+
+			for(var i = 0; i < fire.length; i++) {
+				var _fire = fire[i];
+				if(_fire.delay == 0) {
+					_fire.update();
+				} else {
+					_fire.delay--;
+				}
+			}
+			for(var i = 0; i < fireWork.length; i++) {
+				var _firework = fireWork[i];
+				_firework.update();
+			}
+			draw();
+			requestAnimationFrame(runAnimate);
+			// setTimeout(runAnimate,1000/90);
+		}();
+	</script>
+
+</html>

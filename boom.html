@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>boom</title>
+	</head>
+
+	<body style="margin: 0 auto; padding: 0;">
+		<!--<canvas id="canvas" style="background: #000003;"></canvas>-->
+	</body>
+	<script>
+		//		var canvas = document.getElementById('canvas'),
+		//			h, w;
+
+		var canvas = document.createElement('canvas'),
+			h, w;
+		document.body.appendChild(canvas);
+		canvas.style.background = '#000003';
+		canvas.style.display = 'block';
+
+		var fireNumber = 10;
+		var range = 100,
+			center = {
+				x: canvas.width / 2,
+				y: canvas.height / 2
+			},
+			ctx = canvas.getContext('2d'),
+			listFire = [],
+			listFirework = [];
+
+		! function setSize() {
+			window.onresize = arguments.callee;
+			w = window.innerWidth;
+			h = window.innerHeight;
+			canvas.width = w;
+			canvas.height = h;
+		}();
+
+		function random(min, max) {
+			return Math.random() * (max - min) + min;
+		}
+
+		/*创建烟火*/
+		for(var i = 0; i < fireNumber; i++) {
+			var fire = {
+				x: random(0.48 * w, 0.52 * w),
+				/*x坐标*/
+				y: Math.random() * range * 2.5 + canvas.height,
+				/*y坐标*/
+				vy: random(0, 2) + 4,
+				/*y速度*/
+				ax: Math.random() * 0.06 - 0.03,
+				alpha: 1,
+				size: 3,
+				far: h - random(0.7, 0.8) * h
+			};
+			listFire.push(fire);
+		}
+
+		// 设定随机颜色
+		function randColor() {
+			var rgb = (Math.random() * 0x1000000 << 0).toString(16);
+			return '#' + (new Array(7 - rgb.length).join(0)) + rgb;
+		}
+
+		function update() {
+			for(var i = 0; i < listFire.length; i++) {
+				var rad = (i * Math.PI * 2) / fireNumber;
+				var fire = listFire[i];
+				if(fire.y > fire.far) {
+					var fire = listFire[i];
+					fire.y -= fire.vy;
+				} else {
+					makeDoubleFullCircleFirework(fire);
+					fire.y = h;
+					fire.x = random(0.2 * w, 0.82 * w);
+					fire.ax = Math.random() * 0.06 - 0.03;
+					vy = random(0, 1) + 4;
+					far = random(0.8, 0.9) * h;
+				}
+			}
+
+			for(var i = listFirework.length - 1; i >= 0; i--) {
+				var firework = listFirework[i];
+				if(firework) {
+					firework.vx *= 0.9;
+					firework.vy *= 0.9;
+					firework.x += firework.vx;
+					firework.y += firework.vy;
+					firework.vy += firework.ay;
+					firework.alpha = firework.life / firework.base.life;
+					firework.size = firework.alpha * firework.base.size;
+					firework.alpha = firework.alpha > 0.6 ? 1 : firework.alpha;
+					//
+					firework.life--;
+					if(firework.life <= 0) {
+						listFirework.splice(i, 1);
+					}
+				}
+			}
+		}
+
+		function run() {
+			ctx.globalCompositeOperation = 'source-over';
+			ctx.globalAlpha = 0.2;
+			ctx.fillStyle = '#000003';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			ctx.globalCompositeOperation = 'screen';
+			for(var i = 0; i < listFire.length; i++) {
+				var fire = listFire[i];
+				var newColor = randColor();
+				if(fire.y > fire.far) {
+					ctx.globalAlpha = fire.alpha;
+					ctx.fillStyle = newColor;
+					ctx.beginPath();
+					ctx.arc(fire.x, fire.y, fire.size, 0, Math.PI * 2);
+					ctx.closePath();
+					ctx.fill();
+				}
+			}
+
+			for(var i = 0; i < listFirework.length; i++) {
+				var firework = listFirework[i];
+				ctx.globalAlpha = firework.alpha;
+				ctx.fillStyle = firework.fill;
+				ctx.beginPath();
+				ctx.arc(firework.x, firework.y, firework.size, 0, Math.PI * 2);
+				ctx.closePath();
+				ctx.fill();
+			}
+		}
+
+		(function loop() {
+			update();
+			run();
+			setTimeout(loop, 1000 / 60);
+		})();
+
+		function makeDoubleFullCircleFirework(fire) {
+			var color = randColor();
+			var velocity = Math.random() * 8 + 8;
+			var max = fireNumber * 3;
+			for(var i = 0; i < max; i++) {
+				var rad = (i * Math.PI * 2) / max;
+				var firework = {
+					x: fire.x,
+					y: fire.y,
+					size: Math.random() + 2,
+					fill: color,
+					vx: Math.cos(rad) * velocity + (Math.random() - 0.5) * 10.5,
+					vy: Math.sin(rad) * velocity + (Math.random() - 0.5) * 10.5,
+					ay: 0.04,
+					alpha: 1,
+					life: Math.round(Math.random() * range / 2) + range / 1.5
+				};
+				firework.base = {
+					life: firework.life,
+					size: firework.size
+				};
+				listFirework.push(firework);
+			}
+
+			velocity = Math.random() * 3 + 4;
+			max = fireNumber * 2;
+			for(var i = 0; i < max; i++) {
+				var rad = (i * Math.PI * 2) / max;
+				var firework = {
+					x: fire.x,
+					y: fire.y,
+					size: Math.random() + 1.5,
+					fill: color,
+					vx: Math.cos(rad) * velocity + (Math.random() - 0.5) * 0.5,
+					vy: Math.sin(rad) * velocity + (Math.random() - 0.5) * 0.5,
+					ay: 0.06,
+					alpha: 1,
+					life: Math.round(Math.random() * range / 2) + range / 1.5
+				};
+				firework.base = {
+					life: firework.life,
+					size: firework.size
+				};
+				listFirework.push(firework);
+			}
+
+			max = fireNumber * 4;
+			for(var i = 0; i < max; i++) {
+				var rad = (i * Math.PI * 2) / max;
+				var firework = {
+					x: fire.x,
+					y: fire.y,
+					size: Math.random() + 1.5,
+					fill: color,
+					vx: Math.cos(rad) * velocity * Math.random(),
+					vy: Math.sin(rad) * velocity * Math.random(),
+					ay: 0.06,
+					alpha: 1,
+					life: Math.round(Math.random() * range / 2) + range / 1.5
+				};
+				firework.base = {
+					life: firework.life,
+					size: firework.size
+				};
+				listFirework.push(firework);
+			}
+		}
+	</script>
+
+</html>
