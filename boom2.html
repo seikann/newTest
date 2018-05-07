@@ -128,8 +128,8 @@
 			update: function() {
 				this.vX *= parseInt(random(-3, 3));
 				this.vY *= parseInt(random(-3, 3));
-				this.x += (Math.sin(this.vY) + this.velocity * this.xIndex) * this.vX;
-				this.y += (Math.cos(this.vY) * this.vY *2) ;
+				this.x += (Math.sin(this.vY) + this.velocity * this.xIndex);
+				this.y += (Math.tan(this.vY) * this.vY *2) ;
 				this.vY += this.aY;
 				this.alpha = this.life / this.long;
 				this.size = this.alpha * this.orgSize;
